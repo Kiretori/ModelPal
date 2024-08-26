@@ -12,6 +12,14 @@ class Profile:
     created_at: datetime = field(default_factory=datetime.now())
     updated_at: datetime = field(default_factory=datetime.now())
 
+    def to_dict(self):
+        return {
+            "profile_name": self.name,
+            "ml_models": self.ml_models,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 def create_profile(profile_name: str, ml_models: list[str], meta_data: dict):
     for profile in meta_data.keys:
@@ -37,3 +45,15 @@ def delete_profile(profile_name: str):
         print(f"Error: Could not remove the directory. {e.strerror}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+
+def save_profiles_to_json(profiles):
+    ...
+
+
+def load_profile_from_dict(profile_dict: dict):
+    profile_name = profile_dict.get("profile_name")
+    ml_models = profile_dict.get("ml_models")
+    created_at = profile_dict.get("created_at")
+    updated_at = profile_dict.get("updated_at")
+    return Profile(name=profile_name, ml_models=ml_models, created_at=created_at, updated_at=updated_at)
