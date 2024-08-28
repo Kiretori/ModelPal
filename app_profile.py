@@ -9,30 +9,43 @@ META_DATA_PATH = "data/profiles_metadata.json"
 
 
 @dataclass
+class ModelBlueprint: 
+    input_features: list[str]
+    target_variables: list[str]
+
+
+@dataclass
 class Profile:
     name: str   # Name of the profile
+    model_blueprint: ModelBlueprint
     ml_models: list[str] = field(default_factory=list)  # List of ML models
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
-    # Converts Profile object to dictionary so it can be serialized into JSON
-    def to_dict(self) -> dict:
-        return {
-            "profile_name": self.name,
-            "ml_models": self.ml_models,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
 
 
-def create_profile(profile_name: str, ml_models: list[str], meta_data: dict) -> (tuple[Profile, bool] | bool):
+def create_blueprint(input_features: list[str], target_variables: list[str]) -> (ModelBlueprint | None):
+    if len(input_features) == 0 or len(target_variables) == 0:
+        print("Can't have no input features or target variables")
+        return None
+    else:
+        return ModelBlueprint(input_features, target_variables)
+
+
+
+def create_profile(profile_name: str, blue_print: ModelBlueprint, ml_models: list[str], meta_data: dict) -> (tuple[Profile, bool] | bool):
     for profile in meta_data.keys():
         if profile_name == meta_data[profile]["profile_name"]:
             print("Profile already exists!")
             return False
+    try:
+        os.mkdir(os.path.join(PROFILES_DIR, profile_name))
+    except FileExistsError:
+        print("Directory of profile already exists.")
 
-    os.mkdir(os.path.join(PROFILES_DIR, profile_name))
-    return (Profile(name=profile_name, ml_models=ml_models), True)
+    return (Profile(name=profile_name, model_blueprint=blue_print ,ml_models=ml_models), True)
+
+
 
 
 def add_model_to_profile(profile: Profile, model_name: str, model_path: str) -> bool:
@@ -76,6 +89,7 @@ def save_profiles_to_json(profiles: list[Profile]):
     metadata = {
         p.name: {
             "profile_name": p.name,
+            "model_blueprint": p.model_blueprint.__dict__,
             "ml_models": p.ml_models,
             "created_at": p.created_at.isoformat(),
             "updated_at": p.updated_at.isoformat(),
@@ -87,11 +101,15 @@ def save_profiles_to_json(profiles: list[Profile]):
 
 
 def load_profile_from_dict(profile_dict: dict) -> Profile:
+    # Extract blueprint from dict
+    blueprint_dict = profile_dict.get("model_blueprint")
+
     profile_name = profile_dict.get("profile_name")
+    blueprint = ModelBlueprint(blueprint_dict.get("input_features"), blueprint_dict.get("target_variables"))  # Create blueprint object
     ml_models = profile_dict.get("ml_models")
     created_at = profile_dict.get("created_at")
     updated_at = profile_dict.get("updated_at")
-    return Profile(name=profile_name, ml_models=ml_models, created_at=created_at, updated_at=updated_at)
+    return Profile(name=profile_name, blueprint_dict=blueprint, ml_models=ml_models, created_at=created_at, updated_at=updated_at)
 
 
 def load_dict_from_json() -> (dict | None):
