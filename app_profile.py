@@ -33,17 +33,20 @@ def create_blueprint(input_features: list[str], target_variables: list[str]) -> 
 
 
 
-def create_profile(profile_name: str, blue_print: ModelBlueprint, ml_models: list[str], meta_data: dict) -> (tuple[Profile, bool] | bool):
+def create_profile(profile_name: str, blue_print: (ModelBlueprint | None), ml_models: list[str], meta_data: dict) -> (Profile| None):
     for profile in meta_data.keys():
         if profile_name == meta_data[profile]["profile_name"]:
             print("Profile already exists!")
-            return False
+            return None
     try:
         os.mkdir(os.path.join(PROFILES_DIR, profile_name))
     except FileExistsError:
         print("Directory of profile already exists.")
 
-    return (Profile(name=profile_name, model_blueprint=blue_print ,ml_models=ml_models), True)
+    if blue_print != None: 
+        return Profile(name=profile_name, model_blueprint=blue_print ,ml_models=ml_models)
+    
+    return None
 
 
 
