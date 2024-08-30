@@ -155,5 +155,5 @@ dmypy.json
 cython_debug/
 
 data/
-
+notebooks/
 test.py

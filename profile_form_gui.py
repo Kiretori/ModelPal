@@ -1,9 +1,10 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QListWidget, QHBoxLayout, QFileDialog, QInputDialog
+    QListWidget, QHBoxLayout, QFileDialog, QInputDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
+import ml_utils
 import os 
 
 class ProfileForm(QWidget):
@@ -78,11 +79,34 @@ class ProfileForm(QWidget):
         # Initialize the button states
         self.update_buttons()
 
+    def warning_box(self, window_title, text, additional_text):
+        warning_box = QMessageBox(self)
+        warning_box.setIcon(QMessageBox.Icon.Warning)
+        warning_box.setWindowTitle(window_title)
+        warning_box.setText(text)
+        warning_box.setInformativeText(additional_text)
+        warning_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        warning_box.exec()
+
+
     def upload_models(self):
         # Function to upload model files
         files, _ = QFileDialog.getOpenFileNames(self, 'Select Model Files', '', 'All Files (*)')
         if files:
+
             file_names = [os.path.basename(file) for file in files]
+
+            input_features = ml_utils.get_input_features_from_file(files[0])
+            
+            # TODO: implement the input feature validation fully (different shapes case, different labels case etc...)
+            if len(files) > 1:
+                features_for_validation = ml_utils.get_input_features_from_file(files[1])
+                if sorted(input_features) == sorted(features_for_validation):
+                    self.warning_box("Warning", "Input features mismatch", "Models have different input feature labels this might cause errors later!")
+
+
+
+            self.input_features_list.addItems(input_features)
             self.model_files_list.addItems(file_names)
             self.update_buttons()
 
@@ -126,6 +150,9 @@ class ProfileForm(QWidget):
         self.delete_input_feature_button.setEnabled(self.input_features_list.count() > 0)
         self.delete_target_variable_button.setEnabled(self.target_variables_list.count() > 0)
         self.delete_model_file_button.setEnabled(self.model_files_list.count() > 0)
+
+
+   
 
 def main():
     app = QApplication(sys.argv)
