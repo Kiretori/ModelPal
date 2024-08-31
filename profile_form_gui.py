@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QHBoxLayout, QFileDialog, QInputDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
+import qdarktheme
 import ml_utils
 import os
 
@@ -11,7 +12,10 @@ import os
 class ProfileForm(QWidget):
     def __init__(self):
         super().__init__()
+
+        # Hashmap for registered models in the form
         self.registered_models = {}
+
         # Layout for the form
         layout = QVBoxLayout()
 
@@ -100,36 +104,39 @@ class ProfileForm(QWidget):
 
     def upload_models(self):
         # Function to upload model files
-        files, _ = QFileDialog.getOpenFileNames(
-            self, 'Select Model Files', '', 'All Files (*)')
-        if files:
+        file, _ = QFileDialog.getOpenFileName(
+            self, 'Select Model File', '', 'All Files (*)')
+        if file:
 
-            input_features = ml_utils.get_input_features_from_file(files[0])
+            input_features = ml_utils.get_input_features_from_file(file)
 
-            # TODO: implement the input feature validation fully (different shapes case, different labels case etc...)
-            if len(files) > 1:
-                features_for_validation = ml_utils.get_input_features_from_file(
-                    files[1])
-                if len(input_features) != len(features_for_validation):
-                    self.warning_box("Warning", "Input features mismatch",
-                                     "Models don't have the same number of input features!")
-                    return
-                if sorted(input_features) != sorted(features_for_validation):
-                    self.warning_box("Warning", "Input features mismatch",
-                                     "Models have different input feature labels this might cause errors later!")
+            if len(self.registered_models) >= 1:
 
-            file_names = [os.path.basename(file) for file in files]
+                for other_model in self.registered_models.values():
+                    features_for_validation = ml_utils.get_input_features_from_file(
+                        other_model)
 
-            for key, value in map(lambda file: (os.path.basename(file), file), files):
-                self.registered_models[key] = value
+                    # Gets input features from first element
+                    if len(input_features) != len(features_for_validation):
+                        self.warning_box("Warning", "Input features mismatch",
+                                         "Models don't have the same number of input features!")
+                        return
+
+                    if sorted(input_features) != sorted(features_for_validation):
+                        self.warning_box("Warning", "Input features mismatch",
+                                         "Models have different input feature labels this might cause errors later!")
+
+            file_name = os.path.basename(file)
+
+            self.registered_models[file_name] = file
 
             print(self.registered_models)
 
             for feature in input_features:
-                if not self.item_exists(self.input_features_list, feature):
+                if not self.item_exists(self.input_features_list, feature) and len(self.registered_models) == 0:
                     self.input_features_list.addItem(feature)
 
-            self.model_files_list.addItems(file_names)
+            self.model_files_list.addItem(file_name)
             self.update_buttons()
 
     def delete_model_file(self):
@@ -138,6 +145,7 @@ class ProfileForm(QWidget):
         if selected_item:
             self.model_files_list.takeItem(
                 self.model_files_list.row(selected_item))
+            del self.registered_models[selected_item.text()]
             self.update_buttons()
 
     def add_input_feature(self):
@@ -193,6 +201,7 @@ class ProfileForm(QWidget):
 
 def main():
     app = QApplication(sys.argv)
+    qdarktheme.setup_theme()
     window = ProfileForm()
     window.show()
     sys.exit(app.exec())
