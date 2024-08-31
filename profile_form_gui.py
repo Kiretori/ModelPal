@@ -5,12 +5,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 import ml_utils
-import os 
+import os
+
 
 class ProfileForm(QWidget):
     def __init__(self):
         super().__init__()
-
+        self.registered_models = {}
         # Layout for the form
         layout = QVBoxLayout()
 
@@ -38,7 +39,8 @@ class ProfileForm(QWidget):
         # Input features list
         layout.addWidget(QLabel('Input Features:'))
         self.input_features_list = QListWidget()
-        self.input_features_list.itemSelectionChanged.connect(self.update_buttons)
+        self.input_features_list.itemSelectionChanged.connect(
+            self.update_buttons)
         layout.addWidget(self.input_features_list)
 
         # Buttons to add and delete input features
@@ -48,25 +50,33 @@ class ProfileForm(QWidget):
         input_feature_buttons_layout.addWidget(self.add_input_feature_button)
 
         self.delete_input_feature_button = QPushButton('Delete Input Feature')
-        self.delete_input_feature_button.clicked.connect(self.delete_input_feature)
-        input_feature_buttons_layout.addWidget(self.delete_input_feature_button)
+        self.delete_input_feature_button.clicked.connect(
+            self.delete_input_feature)
+        input_feature_buttons_layout.addWidget(
+            self.delete_input_feature_button)
         layout.addLayout(input_feature_buttons_layout)
 
         # Target variables list
         layout.addWidget(QLabel('Target Variables:'))
         self.target_variables_list = QListWidget()
-        self.target_variables_list.itemSelectionChanged.connect(self.update_buttons)
+        self.target_variables_list.itemSelectionChanged.connect(
+            self.update_buttons)
         layout.addWidget(self.target_variables_list)
 
         # Buttons to add and delete target variables
         target_variable_buttons_layout = QHBoxLayout()
         self.add_target_variable_button = QPushButton('Add Target Variable')
-        self.add_target_variable_button.clicked.connect(self.add_target_variable)
-        target_variable_buttons_layout.addWidget(self.add_target_variable_button)
+        self.add_target_variable_button.clicked.connect(
+            self.add_target_variable)
+        target_variable_buttons_layout.addWidget(
+            self.add_target_variable_button)
 
-        self.delete_target_variable_button = QPushButton('Delete Target Variable')
-        self.delete_target_variable_button.clicked.connect(self.delete_target_variable)
-        target_variable_buttons_layout.addWidget(self.delete_target_variable_button)
+        self.delete_target_variable_button = QPushButton(
+            'Delete Target Variable')
+        self.delete_target_variable_button.clicked.connect(
+            self.delete_target_variable)
+        target_variable_buttons_layout.addWidget(
+            self.delete_target_variable_button)
         layout.addLayout(target_variable_buttons_layout)
 
         # Save profile button
@@ -88,38 +98,52 @@ class ProfileForm(QWidget):
         warning_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         warning_box.exec()
 
-
     def upload_models(self):
         # Function to upload model files
-        files, _ = QFileDialog.getOpenFileNames(self, 'Select Model Files', '', 'All Files (*)')
+        files, _ = QFileDialog.getOpenFileNames(
+            self, 'Select Model Files', '', 'All Files (*)')
         if files:
+
+            input_features = ml_utils.get_input_features_from_file(files[0])
+
+            # TODO: implement the input feature validation fully (different shapes case, different labels case etc...)
+            if len(files) > 1:
+                features_for_validation = ml_utils.get_input_features_from_file(
+                    files[1])
+                if len(input_features) != len(features_for_validation):
+                    self.warning_box("Warning", "Input features mismatch",
+                                     "Models don't have the same number of input features!")
+                    return
+                if sorted(input_features) != sorted(features_for_validation):
+                    self.warning_box("Warning", "Input features mismatch",
+                                     "Models have different input feature labels this might cause errors later!")
 
             file_names = [os.path.basename(file) for file in files]
 
-            input_features = ml_utils.get_input_features_from_file(files[0])
-            
-            # TODO: implement the input feature validation fully (different shapes case, different labels case etc...)
-            if len(files) > 1:
-                features_for_validation = ml_utils.get_input_features_from_file(files[1])
-                if sorted(input_features) == sorted(features_for_validation):
-                    self.warning_box("Warning", "Input features mismatch", "Models have different input feature labels this might cause errors later!")
+            for key, value in map(lambda file: (os.path.basename(file), file), files):
+                self.registered_models[key] = value
 
+            print(self.registered_models)
 
+            for feature in input_features:
+                if not self.item_exists(self.input_features_list, feature):
+                    self.input_features_list.addItem(feature)
 
-            self.input_features_list.addItems(input_features)
             self.model_files_list.addItems(file_names)
             self.update_buttons()
 
     def delete_model_file(self):
         # Function to delete the selected model file
-        selected_item  = self.model_files_list.currentItem()
+        selected_item = self.model_files_list.currentItem()
         if selected_item:
-            self.model_files_list.takeItem(self.model_files_list.row(selected_item))
+            self.model_files_list.takeItem(
+                self.model_files_list.row(selected_item))
             self.update_buttons()
 
     def add_input_feature(self):
         # Function to add an input feature
-        feature, ok = QInputDialog.getText(self, 'Add Input Feature', 'Feature:')
+        feature, ok = QInputDialog.getText(
+            self, 'Add Input Feature', 'Feature:')
         if ok and feature:
             self.input_features_list.addItem(feature)
             self.update_buttons()
@@ -128,12 +152,14 @@ class ProfileForm(QWidget):
         # Function to delete the selected input feature
         selected_item = self.input_features_list.currentItem()
         if selected_item:
-            self.input_features_list.takeItem(self.input_features_list.row(selected_item))
+            self.input_features_list.takeItem(
+                self.input_features_list.row(selected_item))
             self.update_buttons()
 
     def add_target_variable(self):
         # Function to add a target variable
-        variable, ok = QInputDialog.getText(self, 'Add Target Variable', 'Variable:')
+        variable, ok = QInputDialog.getText(
+            self, 'Add Target Variable', 'Variable:')
         if ok and variable:
             self.target_variables_list.addItem(variable)
             self.update_buttons()
@@ -142,23 +168,35 @@ class ProfileForm(QWidget):
         # Function to delete the selected target variable
         selected_item = self.target_variables_list.currentItem()
         if selected_item:
-            self.target_variables_list.takeItem(self.target_variables_list.row(selected_item))
+            self.target_variables_list.takeItem(
+                self.target_variables_list.row(selected_item))
             self.update_buttons()
 
     def update_buttons(self):
         # Enable/disable the delete buttons based on list content
-        self.delete_input_feature_button.setEnabled(self.input_features_list.count() > 0)
-        self.delete_target_variable_button.setEnabled(self.target_variables_list.count() > 0)
-        self.delete_model_file_button.setEnabled(self.model_files_list.count() > 0)
+        self.delete_input_feature_button.setEnabled(
+            self.input_features_list.count() > 0)
+        self.delete_target_variable_button.setEnabled(
+            self.target_variables_list.count() > 0)
+        self.delete_model_file_button.setEnabled(
+            self.model_files_list.count() > 0)
 
+    # Check if item is in a QListWidget
+    def item_exists(self, list_widget: QListWidget, item_text: str):
+        # Iterate through items in the list widget
+        for index in range(list_widget.count()):
+            item = list_widget.item(index)
+            if item.text() == item_text:
+                return True
+        return False
 
-   
 
 def main():
     app = QApplication(sys.argv)
     window = ProfileForm()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == '__main__':
     main()

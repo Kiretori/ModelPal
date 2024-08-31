@@ -1,20 +1,20 @@
-import pickle 
+import pickle
 import joblib
 import os
 
 
-def get_input_features_from_file(path) -> list[str]: 
+def get_input_features_from_file(path) -> list[str]:
     extension = os.path.splitext(os.path.basename(path))[1]
     if extension == ".pkl":
-        return get_features_pkl(path)
+        return _get_features_pkl(path)
     elif extension == ".joblib":
-        ...
-    else: 
+        return _get_features_joblib(path)
+    else:
         print("Can't retrieve input features names from this type of file")
+        return list()
 
 
-
-def get_features_pkl(path) -> list[str]:
+def _get_features_pkl(path) -> list[str]:
     with open(path, "rb") as f:
         model = pickle.load(f)
 
@@ -23,11 +23,11 @@ def get_features_pkl(path) -> list[str]:
     except AttributeError:
         input_features = []
         print("Model does not store input feature names.")
-    
+
     return input_features
 
 
-def get_features_joblib(path) -> list[str]:
+def _get_features_joblib(path) -> list[str]:
     with open(path, "rb") as f:
         model = joblib.load(f)
 
@@ -36,5 +36,5 @@ def get_features_joblib(path) -> list[str]:
     except AttributeError:
         input_features = []
         print("Model does not store input feature names.")
-    
+
     return input_features
