@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QHBoxLayout, QFileDialog, QInputDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
+import app_profile
 import qdarktheme
 import ml_utils
 import os
@@ -60,31 +61,14 @@ class ProfileForm(QWidget):
             self.delete_input_feature_button)
         layout.addLayout(input_feature_buttons_layout)
 
-        # Target variables list
-        layout.addWidget(QLabel('Target Variables:'))
-        self.target_variables_list = QListWidget()
-        self.target_variables_list.itemSelectionChanged.connect(
-            self.update_buttons)
-        layout.addWidget(self.target_variables_list)
-
-        # Buttons to add and delete target variables
-        target_variable_buttons_layout = QHBoxLayout()
-        self.add_target_variable_button = QPushButton('Add Target Variable')
-        self.add_target_variable_button.clicked.connect(
-            self.add_target_variable)
-        target_variable_buttons_layout.addWidget(
-            self.add_target_variable_button)
-
-        self.delete_target_variable_button = QPushButton(
-            'Delete Target Variable')
-        self.delete_target_variable_button.clicked.connect(
-            self.delete_target_variable)
-        target_variable_buttons_layout.addWidget(
-            self.delete_target_variable_button)
-        layout.addLayout(target_variable_buttons_layout)
+        # Target variable name
+        layout.addWidget(QLabel('Target variable label:'))
+        self.target_variable_input = QLineEdit()
+        layout.addWidget(self.target_variable_input)
 
         # Save profile button
         self.save_button = QPushButton('Save Profile')
+        self.save_button.clicked.connect(self.save_profile)
         layout.addWidget(self.save_button)
 
         # Set layout to the main window
@@ -133,7 +117,7 @@ class ProfileForm(QWidget):
             print(self.registered_models)
 
             for feature in input_features:
-                if not self.item_exists(self.input_features_list, feature) and len(self.registered_models) == 0:
+                if (not self.item_exists(self.input_features_list, feature)):
                     self.input_features_list.addItem(feature)
 
             self.model_files_list.addItem(file_name)
@@ -184,8 +168,6 @@ class ProfileForm(QWidget):
         # Enable/disable the delete buttons based on list content
         self.delete_input_feature_button.setEnabled(
             self.input_features_list.count() > 0)
-        self.delete_target_variable_button.setEnabled(
-            self.target_variables_list.count() > 0)
         self.delete_model_file_button.setEnabled(
             self.model_files_list.count() > 0)
 
@@ -197,6 +179,20 @@ class ProfileForm(QWidget):
             if item.text() == item_text:
                 return True
         return False
+
+    # Function that saves the profile
+
+    def save_profile(self):
+        features = []
+        for index in range(self.input_features_list.count()):
+            features.append(self.input_features_list.item(index).text())
+
+        metadata = app_profile.load_dict_from_json()
+        blueprint = app_profile.create_blueprint(
+            features, self.target_variable_input.text())
+        new_profile = app_profile.create_profile(
+            self.profile_name_input.text(), blueprint, list(self.registered_models.values()), metadata)
+        app_profile.save_profiles_to_json([new_profile])
 
 
 def main():

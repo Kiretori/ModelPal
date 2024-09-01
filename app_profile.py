@@ -9,9 +9,9 @@ META_DATA_PATH = "data/profiles_metadata.json"
 
 
 @dataclass
-class ModelBlueprint: 
+class ModelBlueprint:
     input_features: list[str]
-    target_variables: list[str]
+    target_variables: str = ""
 
 
 @dataclass
@@ -23,17 +23,15 @@ class Profile:
     updated_at: datetime = field(default_factory=datetime.now)
 
 
-
-def create_blueprint(input_features: list[str], target_variables: list[str]) -> (ModelBlueprint | None):
-    if len(input_features) == 0 or len(target_variables) == 0:
+def create_blueprint(input_features: list[str], target_variables: str) -> (ModelBlueprint | None):
+    if len(input_features) == 0:
         print("Can't have no input features or target variables")
         return None
     else:
         return ModelBlueprint(input_features, target_variables)
 
 
-
-def create_profile(profile_name: str, blue_print: (ModelBlueprint | None), ml_models: list[str], meta_data: dict) -> (Profile| None):
+def create_profile(profile_name: str, blue_print: (ModelBlueprint | None), ml_models: list[str], meta_data: dict) -> (Profile | None):
     for profile in meta_data.keys():
         if profile_name == meta_data[profile]["profile_name"]:
             print("Profile already exists!")
@@ -43,12 +41,11 @@ def create_profile(profile_name: str, blue_print: (ModelBlueprint | None), ml_mo
     except FileExistsError:
         print("Directory of profile already exists.")
 
-    if blue_print != None: 
-        return Profile(name=profile_name, model_blueprint=blue_print ,ml_models=ml_models)
-    
+    if blue_print != None:
+        copy_models(ml_models, os.path.join(PROFILES_DIR, profile_name))
+        return Profile(name=profile_name, model_blueprint=blue_print, ml_models=ml_models)
+
     return None
-
-
 
 
 def add_model_to_profile(profile: Profile, model_name: str, model_path: str) -> bool:
@@ -62,15 +59,17 @@ def add_model_to_profile(profile: Profile, model_name: str, model_path: str) -> 
     profile.ml_models.append(model_name)
     profile.updated_at = datetime.now()
 
-    try:
-        shutil.copy(model_path, os.path.join(PROFILES_DIR, profile.name))
-        return True
-    except:
-        print("There was an error while copying the model to the profile directory.")
-        return False
+    copy_models(model_path, os.path.join(PROFILES_DIR, profile.name))
 
-    
 
+def copy_models(src_list: list[str], dest: str) -> None:
+    for src in src_list:
+        try:
+            shutil.copy(src, dest)
+            return True
+        except:
+            print("There was an error while copying the model to the profile directory.")
+            return False
 
 
 def delete_profile(profile_name: str) -> bool:
@@ -108,7 +107,8 @@ def load_profile_from_dict(profile_dict: dict) -> Profile:
     blueprint_dict = profile_dict.get("model_blueprint")
 
     profile_name = profile_dict.get("profile_name")
-    blueprint = ModelBlueprint(blueprint_dict.get("input_features"), blueprint_dict.get("target_variables"))  # Create blueprint object
+    blueprint = ModelBlueprint(blueprint_dict.get("input_features"), blueprint_dict.get(
+        "target_variables"))  # Create blueprint object
     ml_models = profile_dict.get("ml_models")
     created_at = profile_dict.get("created_at")
     updated_at = profile_dict.get("updated_at")
