@@ -192,7 +192,14 @@ class ProfileForm(QWidget):
             features, self.target_variable_input.text())
         new_profile = app_profile.create_profile(
             self.profile_name_input.text(), blueprint, list(self.registered_models.values()), metadata)
-        app_profile.save_profiles_to_json([new_profile])
+
+        if new_profile != None:
+            ok = app_profile.save_profiles_to_json([new_profile], metadata)
+
+            if ok:  # TODO: Show text box for error
+                print("Data saved successfully.")
+            else:
+                print("Failed to save data.")
 
 
 def main():

@@ -87,19 +87,27 @@ def delete_profile(profile_name: str) -> bool:
         return False
 
 
-def save_profiles_to_json(profiles: list[Profile]):
-    metadata = {
-        p.name: {
+def save_profiles_to_json(profiles: list[Profile], metadata):
+
+    for p in profiles:
+        metadata[p.name] = {
             "profile_name": p.name,
             "model_blueprint": p.model_blueprint.__dict__,
             "ml_models": p.ml_models,
             "created_at": p.created_at.isoformat(),
             "updated_at": p.updated_at.isoformat(),
-        } for p in profiles
-    }
+        }
+    try:
+        with open(META_DATA_PATH + ".tmp", "w") as f:
+            json.dump(metadata, f, indent=4)
 
-    with open(META_DATA_PATH, "w") as f:
-        json.dump(metadata, f, indent=4)
+    except Exception as e:
+        print(f"The error is: {e}")
+        return False
+
+    os.rename(META_DATA_PATH +
+              ".tmp", META_DATA_PATH)
+    return True
 
 
 def load_profile_from_dict(profile_dict: dict) -> Profile:
