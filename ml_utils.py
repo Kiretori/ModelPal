@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+from sklearn.base import BaseEstimator
 import pickle
 import joblib
 import os
@@ -38,3 +41,9 @@ def _get_features_joblib(path) -> list[str]:
         print("Model does not store input feature names.")
 
     return input_features
+
+
+def get_predictions(input_features: list[str], model: BaseEstimator, data: np.ndarray | pd.DataFrame):
+    corrected_data = data[input_features]
+    predictions = model.predict(corrected_data)
+    return predictions
