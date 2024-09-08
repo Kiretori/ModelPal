@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 import app_profile
-import qdarktheme
 import ml_utils
 import os
 
@@ -204,7 +203,6 @@ class ProfileForm(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    qdarktheme.setup_theme()
     window = ProfileForm()
     window.show()
     sys.exit(app.exec())
